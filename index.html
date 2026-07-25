@@ -84,7 +84,7 @@
         <h1>Top Jogadores 🏆</h1>
         
         <select id="filtro-tempo" onchange="aplicarFiltro()" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; font-size: 16px; border: 2px solid #bdc3c7;">
-            <option value="hoje">Hoje</option>
+            <option value="hoje" selected>Hoje</option>
             <option value="3dias">Últimos 3 dias</option>
             <option value="1mes">Último mês</option>
             <option value="3meses">Últimos 3 meses</option>
@@ -292,7 +292,9 @@
             else if (filtro === '1ano') { dataLimite.setFullYear(hoje.getFullYear() - 1); }
             else if (filtro === 'sempre') { dataLimite = new Date(2000, 0, 1); }
 
-            const agrupamento = {};
+            const agrupamentoGeral = {};
+            const agrupamentoHoje = {};
+            const hojeStr = new Date().toLocaleDateString('pt-BR');
 
             dadosGlobaisRanking.forEach(jogo => {
                 const partes = jogo.data.split('/'); 
@@ -300,18 +302,36 @@
                     const dataJogo = new Date(partes[2], partes[1] - 1, partes[0]);
                     dataJogo.setHours(0,0,0,0);
 
+                    // Verifica se está dentro do período selecionado no filtro
                     if (dataJogo >= dataLimite && dataJogo <= hoje) {
-                        if (!agrupamento[jogo.nome]) agrupamento[jogo.nome] = 0;
-                        agrupamento[jogo.nome] += jogo.acertos;
+                        if (!agrupamentoGeral[jogo.nome]) agrupamentoGeral[jogo.nome] = 0;
+                        agrupamentoGeral[jogo.nome] += jogo.acertos;
+
+                        // Guarda separadamente quem pontuou HOJE
+                        if (jogo.data === hojeStr) {
+                            if (!agrupamentoHoje[jogo.nome]) agrupamentoHoje[jogo.nome] = 0;
+                            agrupamentoHoje[jogo.nome] += jogo.acertos;
+                        }
                     }
                 }
             });
 
-            const rankingFiltrado = Object.keys(agrupamento).map(nome => {
-                return { nome: nome, acertos: agrupamento[nome] };
+            const rankingFiltrado = Object.keys(agrupamentoGeral).map(nome => {
+                return { 
+                    nome: nome, 
+                    acertos: agrupamentoGeral[nome],
+                    pontosHoje: agrupamentoHoje[nome] || 0 // Identifica se tem pontos hoje
+                };
             });
 
-            rankingFiltrado.sort((a, b) => b.acertos - a.acertos);
+            // ORDENAÇÃO INTELIGENTE: Quem tem pontos hoje vem primeiro, depois por maior pontuação geral
+            rankingFiltrado.sort((a, b) => {
+                if (b.pontosHoje !== a.pontosHoje) {
+                    return b.pontosHoje - a.pontosHoje; // Prioriza quem jogou e pontuou hoje
+                }
+                return b.acertos - a.acertos; // Desempate por total geral do período
+            });
+
             renderizarLista(rankingFiltrado);
         }
 
