@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Desafio da Tabuada</title>
     <link rel="apple-touch-icon" href="https://i.imgur.com/A7e59QW.png">
     <link rel="manifest" href="manifest.json">
+    <title>Desafio da Tabuada</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -54,6 +54,7 @@
         <button onclick="registrarEntrada()">Começar Agora!</button>
         <button onclick="mostrarRanking()" style="background-color: #f39c12; margin-top: 15px;">🏆 Ver Ranking</button>
         <button onclick="mostrarInstrucaoInstalacao()" id="btn-instalar" style="background-color: #9b59b6; margin-top: 15px;">📱 Instalar o App</button>
+        <button onclick="compartilharApp()" style="background-color: #27ae60; margin-top: 15px;">📤 Compartilhar Jogo</button>
     </div>
 
     <!-- MODAL / AVISO DE INSTALAÇÃO -->
@@ -66,6 +67,7 @@
             <button onclick="fecharInstrucao()" style="background-color: #e74c3c; padding: 12px;">Entendi, fechar</button>
         </div>
     </div>
+    
     
     <!-- TELA DO JOGO -->
     <div id="tela-jogo" class="tela oculto">
@@ -449,6 +451,23 @@
 
         function fecharInstrucao() {
             document.getElementById('modal-instalacao').classList.add('oculto');
+        }
+
+        function compartilharApp() {
+            // Verifica se o celular suporta o compartilhamento nativo
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Desafio da Tabuada 🚀',
+                    text: 'Venha praticar tabuada e disputar o ranking comigo!',
+                    url: window.location.href // Pega o link atual do site automaticamente
+                })
+                .then(() => console.log('Compartilhado com sucesso'))
+                .catch((erro) => console.log('Erro ao compartilhar', erro));
+            } else {
+                // Caso o navegador do computador ou algum mais antigo não suporte
+                navigator.clipboard.writeText(window.location.href);
+                alert("Link copiado para a área de transferência! Cole para enviar aos amigos. 📋");
+            }
         }
     </script>
 </body>
