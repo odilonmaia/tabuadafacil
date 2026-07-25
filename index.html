@@ -144,15 +144,15 @@
         return; 
     }
 
-    // Aplica o filtro de segurança para evitar códigos ou caracteres estranhos
+    // Limpa caracteres estranhos e padroniza em maiúsculas
     let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").toUpperCase();
     if (nomeLimpo.length > 15) {
-        nomeLimpo = nomeLimpo.substring(0, 15); // Limita o tamanho para caber no ranking
+        nomeLimpo = nomeLimpo.substring(0, 15);
     }
 
     const dataAtual = new Date();
     
-    // SALVA NA MEMÓRIA DO NAVEGADOR
+    // SALVA NA MEMÓRIA COM A CHAVE PADRÃO 'jogadoraNome'
     localStorage.setItem('jogadoraNome', nomeLimpo);
     localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
     localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
@@ -160,22 +160,6 @@
     document.getElementById('tela-login').classList.add('oculto');
     document.getElementById('tela-jogo').classList.remove('oculto');
     gerarPergunta();
-}
-
-        function validarEEnviarNome(nomeDigitado) {
-    // Remove qualquer caractere especial, mantendo apenas letras (com acentos) e números
-    let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").trim();
-    
-    // Limita o tamanho máximo do nome para não quebrar o layout do ranking (ex: máximo 15 caracteres)
-    if (nomeLimpo.length > 15) {
-        nomeLimpo = nomeLimpo.substring(0, 15);
-    }
-
-    if (nomeLimpo === "") {
-        alert("Por favor, digite um nome válido!");
-        return false;
-    }
-    return nomeLimpo;
 }
 
         function gerarPergunta() {
@@ -495,15 +479,16 @@
        // ==========================================
         // CARREGAMENTO AUTOMÁTICO E LIMPEZA DE NOME
         // ==========================================
-        window.addEventListener('DOMContentLoaded', () => {
-            const nomeSalvo = localStorage.getItem('jogadoraNome');
-            if (nomeSalvo) {
-                const inputNome = document.getElementById('nome-jogadora');
-                if (inputNome) {
-                    inputNome.value = nomeSalvo;
-                }
-            }
-        });
+        // Carrega automaticamente o nome salvo assim que o site abre
+window.addEventListener('DOMContentLoaded', () => {
+    const nomeSalvo = localStorage.getItem('jogadoraNome');
+    if (nomeSalvo) {
+        const inputNome = document.getElementById('nome-jogadora');
+        if (inputNome) {
+            inputNome.value = nomeSalvo;
+        }
+    }
+});
 
         function limparNomeSalvo() {
             localStorage.removeItem('jogadoraNome');
