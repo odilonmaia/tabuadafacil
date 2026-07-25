@@ -223,29 +223,29 @@
         }
 
         function finalizarJogo() {
-        document.getElementById('tela-jogo').classList.add('oculto');
-        document.getElementById('tela-final').classList.remove('oculto');
-        document.getElementById('nota-final').innerText = `${acertos}/${totalPerguntas}`;
-        document.getElementById('mensagem-envio').innerText = "Salvando resultados...";
+            document.getElementById('tela-jogo').classList.add('oculto');
+            document.getElementById('tela-final').classList.remove('oculto');
+            document.getElementById('nota-final').innerText = `${acertos}/${totalPerguntas}`;
+            document.getElementById('mensagem-envio').innerText = "Salvando resultados...";
 
-        const dadosParaEnviar = {
-            token: "TabuadaEscola2026Secure#", // <-- O token precisa estar aqui!
-            nome: localStorage.getItem('jogadoraNome'),
-            acertos: acertos,
-            erros: errosCometidos.length > 0 ? errosCometidos.join(" | ") : "Nenhum erro!",
-            data: new Date().toLocaleDateString('pt-BR')
-        };
+            const dadosParaEnviar = {
+                token: "TabuadaEscola2026Secure#",
+                data: localStorage.getItem('jogadoraData'),
+                hora: localStorage.getItem('jogadoraHorario'),
+                nome: localStorage.getItem('jogadoraNome'),
+                acertos: acertos,
+                erros: errosCometidos.length > 0 ? errosCometidos.join(" | ") : "Nenhum erro!"
+            };
 
-        fetch(URL_DO_SCRIPT, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dadosParaEnviar)
-        })
-        .then(() => { document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! ✅"; })
-        .catch(() => { document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; });
-    }
-
+            fetch(URL_DO_SCRIPT, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dadosParaEnviar)
+            })
+            .then(() => { document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! ✅"; })
+            .catch(() => { document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; });
+        }
         // Reseta o jogo mantendo o nome da pessoa para mais 10 perguntas
         function continuarJogando() {
             perguntaAtual = 1;
