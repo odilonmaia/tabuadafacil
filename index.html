@@ -51,8 +51,19 @@
        <input type="text" id="nome-jogadora" placeholder="Qual o seu nome?" maxlength="20" style="text-transform: uppercase;" autocapitalize="characters" autocomplete="off">
         <button onclick="registrarEntrada()">Começar Agora!</button>
         <button onclick="mostrarRanking()" style="background-color: #f39c12; margin-top: 15px;">🏆 Ver Ranking</button>
+        <button onclick="mostrarInstrucaoInstalacao()" id="btn-instalar" style="background-color: #9b59b6; margin-top: 15px;">📱 Instalar o App</button>
     </div>
 
+    <!-- MODAL / AVISO DE INSTALAÇÃO -->
+    <div id="modal-instalacao" class="tela oculto" style="background-color: rgba(0,0,0,0.8); position: fixed; top: 0; left: 0; z-index: 999;">
+        <div style="background: white; padding: 24px; border-radius: 16px; width: 90%; max-width: 400px; text-align: left; color: #2c3e50;">
+            <h2 style="color: #2c3e50; margin-bottom: 15px; text-align: center;">Como Instalar o App 📱</h2>
+            <div id="texto-instrucao" style="font-size: 16px; line-height: 1.5; margin-bottom: 20px;">
+                <!-- O texto muda sozinho dependendo se é iPhone ou Android -->
+            </div>
+            <button onclick="fecharInstrucao()" style="background-color: #e74c3c; padding: 12px;">Entendi, fechar</button>
+        </div>
+    </div>
     
     <!-- TELA DO JOGO -->
     <div id="tela-jogo" class="tela oculto">
@@ -389,6 +400,54 @@
                 }
             }
         });
+
+        let eventoInstalacao = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            eventoInstalacao = e;
+        });
+
+        function mostrarInstrucaoInstalacao() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const textoInstrucao = document.getElementById('texto-instrucao');
+
+            if (isIOS) {
+                // Instruções específicas para iPhone / Safari
+                textoInstrucao.innerHTML = `
+                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu <b>iPhone</b>, siga estes passos rápidos:</p>
+                    <ol style="padding-left: 20px; color: #555;">
+                        <li>Toque no botão de <b>Compartilhar</b> <span style="font-size: 20px;">📤</span> na barra inferior do Safari.</li>
+                        <li>Role o menu para baixo e procure a opção <b>"Adicionar à Tela de Início"</b> ➕.</li>
+                        <li>Toque em <b>Adicionar</b> no canto superior direito. Pronto!</li>
+                    </ol>
+                `;
+            } else if (eventoInstalacao) {
+                // Se for Android e o navegador permitir o gatilho automático
+                eventoInstalacao.prompt();
+                eventoInstalacao.userChoice.then((escolha) => {
+                    eventoInstalacao = null;
+                });
+                return;
+            } else {
+                // Instruções genéricas para Android caso o evento não dispare de primeira
+                textoInstrucao.innerHTML = `
+                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu celular:</p>
+                    <ol style="padding-left: 20px; color: #555;">
+                        <li>Toque nos <b>três pontinhos</b> <b>(⋮)</b> no canto superior direito do navegador.</li>
+                        <li>Procure e selecione <b>"Adicionar à tela inicial"</b> ou <b>"Instalar aplicativo"</b>.</li>
+                        <li>Confirme e o ícone aparecerá na sua tela!</li>
+                    </ol>
+                `;
+            }
+
+            // Exibe a janelinha de instrução
+            document.getElementById('modal-instalacao').classList.remove('oculto');
+        }
+
+        function fecharInstrucao() {
+            document.getElementById('modal-instalacao').classList.add('oculto');
+        }
     </script>
 </body>
 </html>
