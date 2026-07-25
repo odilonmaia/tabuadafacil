@@ -151,6 +151,22 @@
             gerarPergunta();
         }
 
+        function validarEEnviarNome(nomeDigitado) {
+    // Remove qualquer caractere especial, mantendo apenas letras (com acentos) e números
+    let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").trim();
+    
+    // Limita o tamanho máximo do nome para não quebrar o layout do ranking (ex: máximo 15 caracteres)
+    if (nomeLimpo.length > 15) {
+        nomeLimpo = nomeLimpo.substring(0, 15);
+    }
+
+    if (nomeLimpo === "") {
+        alert("Por favor, digite um nome válido!");
+        return false;
+    }
+    return nomeLimpo;
+}
+
         function gerarPergunta() {
             fator1 = Math.floor(Math.random() * 8) + 2; 
             fator2 = Math.floor(Math.random() * 8) + 2;
@@ -239,30 +255,26 @@
             location.reload(); 
         }
 
-        function enviarParaPlanilha(dados) {
-            // Desativa os botões da tela final para ninguém clicar duas vezes
-            const botoes = document.querySelectorAll('#tela-final button');
-            botoes.forEach(btn => btn.disabled = true);
-            document.getElementById('mensagem-envio').innerText = "Enviando resultados...";
+        function enviarDadosParaPlanilha(nome, acertos, erros) {
+    const dadosParaEnviar = {
+        token: "TabuadaEscola2026Secure#", // Precisa ser exatamente igual à do Apps Script
+        nome: nome,
+        acertos: acertos,
+        erros: erros,
+        data: new Date().toLocaleDateString('pt-BR')
+    };
 
-            fetch(URL_DO_SCRIPT, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(dados)
-            })
-            .then(() => { 
-                document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! 🎉"; 
-                // Reativa os botões assim que o envio termina com sucesso
-                botoes.forEach(btn => btn.disabled = false);
-            })
-            .catch((erro) => { 
-                document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; 
-                // Reativa os botões mesmo se der erro para a pessoa poder tentar sair
-                botoes.forEach(btn => btn.disabled = false);
-                console.error(erro);
-            });
-        }
+    fetch(URL_DO_SCRIPT, {
+        method: 'POST',
+        mode: 'no-cors', // Mantém o funcionamento do GitHub Pages com o Apps Script
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dadosParaEnviar)
+    })
+    .then(() => {
+        console.log("Pontuação salva com segurança!");
+    })
+    .catch(err => console.error("Erro ao salvar:", err));
+}
 
         function sairDoJogo() {
             localStorage.removeItem('jogadoraNome');
