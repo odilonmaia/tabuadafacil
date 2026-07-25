@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Desafio da Tabuada</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #ffffff; display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden; 
+        }
+        .tela {
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; height: 100%; padding: 24px; text-align: center; width: 100%;
+        }
+        h1 { color: #2c3e50; font-size: 32px; margin-bottom: 12px; }
+        h2 { color: #7f8c8d; font-size: 16px; margin-bottom: 30px; font-weight: normal; }
+        p { color: #7f8c8d; font-size: 18px; margin-bottom: 40px; line-height: 1.4; }
+        input {
+            width: 100%; padding: 18px; margin-bottom: 24px; border: 2px solid #e0e6ed;
+            border-radius: 12px; font-size: 24px; text-align: center; outline: none;
+            -webkit-appearance: none; transition: all 0.3s;
+        }
+        input:focus { border-color: #3498db; }
+        button {
+            background-color: #3498db; color: white; border: none; padding: 20px;
+            font-size: 20px; border-radius: 12px; width: 100%; font-weight: bold;
+            box-shadow: 0 4px 6px rgba(52, 152, 219, 0.3); transition: transform 0.1s; cursor: pointer;
+        }
+        button:active { transform: scale(0.96); background-color: #2980b9; }
+        .oculto { display: none !important; }
+        
+        #conta-container {
+            font-size: 56px; font-weight: bold; color: #2c3e50;
+            margin-bottom: 30px; display: flex; gap: 15px;
+        }
+        .sinal { color: #bdc3c7; }
+        .acertou { border-color: #2ecc71 !important; background-color: #eafaf1; color: #27ae60; }
+        .errou { border-color: #e74c3c !important; background-color: #fceceb; color: #c0392b; }
+        .destaque-nota { font-size: 80px; font-weight: bold; color: #2ecc71; margin: 20px 0; }
+    </style>
+</head>
+<body>
+
+    <!-- TELA INICIAL (LOGIN) -->
+    <div id="tela-login" class="tela">
+        <h1>Tabuada 🚀</h1>
+        <p>Pratique 5 minutinhos e mostre que você está cada dia mais craque!</p>
+       <input type="text" id="nome-jogadora" placeholder="Qual o seu nome?" maxlength="20" style="text-transform: uppercase;" autocapitalize="characters" autocomplete="off">
+        <button onclick="registrarEntrada()">Começar Agora!</button>
+        <button onclick="mostrarRanking()" style="background-color: #f39c12; margin-top: 15px;">🏆 Ver Ranking</button>
+    </div>
+
+    
+    <!-- TELA DO JOGO -->
+    <div id="tela-jogo" class="tela oculto">
+        <h2 id="contador-perguntas">Pergunta 1 de 10</h2>
+        <div id="conta-container">
+            <span id="fator1">0</span><span class="sinal">×</span><span id="fator2">0</span>
+        </div>
+        <input type="number" id="resposta" inputmode="numeric" pattern="[0-9]*" placeholder="?">
+        <button onclick="verificarResposta()" id="btn-responder">Responder</button>
+        
+        <!-- Nosso novo botão de desistir/sair no meio da partida -->
+        <button onclick="sairDoJogo()" style="background-color: #e74c3c; margin-top: 15px; font-size: 16px; padding: 12px;">Sair do Jogo</button>
+    </div>
+
+    <!-- TELA FINAL -->
+    <div id="tela-final" class="tela oculto">
+        <h1>Mandou bem! 🎉</h1>
+        <p>Você completou o bloco de 10 perguntas.</p>
+        <div class="destaque-nota" id="nota-final">10/10</div>
+        <p id="mensagem-envio">Resultados salvos!</p>
+        
+        <!-- Novos botões de escolha -->
+        <button onclick="continuarJogando()" style="margin-top: 15px; background-color: #2ecc71;">Resolver mais 10 🚀</button>
+        <button onclick="irParaTelaInicio()" style="margin-top: 12px; background-color: #e74c3c;">Finalizar e Sair</button>
+    </div>
+
+    <!-- TELA DE RANKING -->
+    <div id="tela-ranking" class="tela oculto">
+        <h1>Top Jogadores 🏆</h1>
+        
+        <select id="filtro-tempo" onchange="aplicarFiltro()" style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; font-size: 16px; border: 2px solid #bdc3c7;">
+            <option value="hoje">Hoje</option>
+            <option value="3dias">Últimos 3 dias</option>
+            <option value="1mes">Último mês</option>
+            <option value="3meses">Últimos 3 meses</option>
+            <option value="6meses">Últimos 6 meses</option>
+            <option value="1ano">Último ano</option>
+            <option value="sempre" selected>Sempre</option>
+        </select>
+
+        <div id="lista-ranking" style="text-align: left; width: 100%; margin-bottom: 20px; font-size: 18px; max-height: 50vh; overflow-y: auto;">
+            <p style="text-align: center;">Carregando...</p>
+        </div>
+        <button onclick="voltarInicio()" style="background-color: #7f8c8d;">Voltar</button>
+    </div>
+
+    <script>
+        // ==========================================
+        // VARIÁVEIS GERAIS
+        // ==========================================
+        let fator1, fator2, respostaCorreta;
+        let perguntaAtual = 1;
+        const totalPerguntas = 10;
+        let acertos = 0;
+        let errosCometidos = []; 
+        let dadosGlobaisRanking = [];
+
+        // ⚠️ ATENÇÃO: COLOQUE A SUA URL AQUI DENTRO DAS ASPAS! 
+        // Exemplo: "https://script.google.com/macros/s/SEU_CODIGO/exec"
+        const URL_DO_SCRIPT = "https://script.google.com/macros/s/AKfycbyWrNs1wEvp3GKH3VSh5EoCJgAaL2UEmYEeer5x4hcIXTzsGXtag_Ep3ydNteYWzFA/exec"; 
+
+        // ==========================================
+        // LÓGICA DO JOGO
+        // ==========================================
+        function registrarEntrada() {
+            const inputNome = document.getElementById('nome-jogadora');
+            const nome = inputNome.value.trim().toUpperCase();
+            
+            if (nome === "") { 
+                alert("Digite seu nome!"); 
+                return; 
+            }
+
+            const dataAtual = new Date();
+            localStorage.setItem('jogadoraNome', nome);
+            localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
+            localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
+
+            document.getElementById('tela-login').classList.add('oculto');
+            document.getElementById('tela-jogo').classList.remove('oculto');
+            gerarPergunta();
+        }
+
+        function gerarPergunta() {
+            fator1 = Math.floor(Math.random() * 8) + 2; 
+            fator2 = Math.floor(Math.random() * 8) + 2;
+            respostaCorreta = fator1 * fator2;
+
+            document.getElementById('fator1').innerText = fator1;
+            document.getElementById('fator2').innerText = fator2;
+            document.getElementById('contador-perguntas').innerText = `Pergunta ${perguntaAtual} de ${totalPerguntas}`;
+            
+            const inputResposta = document.getElementById('resposta');
+            inputResposta.value = ""; 
+            inputResposta.className = ""; 
+            inputResposta.focus(); 
+        }
+
+        function verificarResposta() {
+            const inputResposta = document.getElementById('resposta');
+            const respostaUsuario = parseInt(inputResposta.value);
+            if (isNaN(respostaUsuario)) return;
+
+            document.getElementById('btn-responder').disabled = true;
+            inputResposta.disabled = true;
+
+            if (respostaUsuario === respostaCorreta) {
+                acertos++;
+                inputResposta.classList.add('acertou');
+            } else {
+                errosCometidos.push(`${fator1}x${fator2} (resp: ${respostaUsuario})`);
+                inputResposta.classList.add('errou');
+            }
+
+            setTimeout(() => {
+                perguntaAtual++;
+                document.getElementById('btn-responder').disabled = false;
+                inputResposta.disabled = false;
+
+                if (perguntaAtual > totalPerguntas) {
+                    finalizarJogo();
+                } else {
+                    gerarPergunta();
+                }
+            }, 1000);
+        }
+
+        function finalizarJogo() {
+            document.getElementById('tela-jogo').classList.add('oculto');
+            document.getElementById('tela-final').classList.remove('oculto');
+            document.getElementById('nota-final').innerText = `${acertos}/${totalPerguntas}`;
+            document.getElementById('mensagem-envio').innerText = "Salvando resultados...";
+
+            const dadosParaEnviar = {
+                data: localStorage.getItem('jogadoraData'),
+                hora: localStorage.getItem('jogadoraHorario'),
+                nome: localStorage.getItem('jogadoraNome'),
+                acertos: acertos,
+                erros: errosCometidos.length > 0 ? errosCometidos.join(" | ") : "Nenhum erro!" 
+            };
+
+            // Envia para a planilha em segundo plano
+            fetch(URL_DO_SCRIPT, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(dadosParaEnviar)
+            })
+            .then(() => { document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! ✅"; })
+            .catch(() => { document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; });
+        }
+
+        // Reseta o jogo mantendo o nome da pessoa para mais 10 perguntas
+        function continuarJogando() {
+            perguntaAtual = 1;
+            acertos = 0;
+            errosCometidos = [];
+            
+            document.getElementById('tela-final').classList.add('oculto');
+            document.getElementById('tela-jogo').classList.remove('oculto');
+            gerarPergunta();
+        }
+
+        // Limpa tudo e volta de verdade para a tela inicial
+        function irParaTelaInicio() {
+            localStorage.removeItem('jogadoraNome');
+            localStorage.removeItem('jogadoraData');
+            localStorage.removeItem('jogadoraHorario');
+            location.reload(); 
+        }
+
+        function enviarParaPlanilha(dados) {
+            // Desativa os botões da tela final para ninguém clicar duas vezes
+            const botoes = document.querySelectorAll('#tela-final button');
+            botoes.forEach(btn => btn.disabled = true);
+            document.getElementById('mensagem-envio').innerText = "Enviando resultados...";
+
+            fetch(URL_DO_SCRIPT, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(dados)
+            })
+            .then(() => { 
+                document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! 🎉"; 
+                // Reativa os botões assim que o envio termina com sucesso
+                botoes.forEach(btn => btn.disabled = false);
+            })
+            .catch((erro) => { 
+                document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; 
+                // Reativa os botões mesmo se der erro para a pessoa poder tentar sair
+                botoes.forEach(btn => btn.disabled = false);
+                console.error(erro);
+            });
+        }
+
+        function sairDoJogo() {
+            localStorage.removeItem('jogadoraNome');
+            localStorage.removeItem('jogadoraData');
+            localStorage.removeItem('jogadoraHorario');
+            location.reload(); 
+        }
+
+        // ==========================================
+        // LÓGICA DO RANKING
+        // ==========================================
+        function mostrarRanking() {
+            document.getElementById('tela-login').classList.add('oculto');
+            document.getElementById('tela-ranking').classList.remove('oculto');
+            document.getElementById('lista-ranking').innerHTML = "<p style='text-align: center;'>Buscando no banco de dados...</p>";
+
+            fetch(URL_DO_SCRIPT)
+                .then(resposta => resposta.json())
+                .then(dados => {
+                    dadosGlobaisRanking = dados;
+                    aplicarFiltro(); 
+                })
+                .catch(erro => {
+                    document.getElementById('lista-ranking').innerHTML = "<p style='color: red; text-align: center;'>Erro ao carregar o ranking.</p>";
+                    console.error("Erro no fetch:", erro);
+                });
+        }
+
+        function aplicarFiltro() {
+            const filtro = document.getElementById('filtro-tempo').value;
+            const hoje = new Date();
+            hoje.setHours(0,0,0,0);
+            
+            let dataLimite = new Date();
+            dataLimite.setHours(0,0,0,0);
+
+            if (filtro === 'hoje') { dataLimite = hoje; }
+            else if (filtro === '3dias') { dataLimite.setDate(hoje.getDate() - 3); }
+            else if (filtro === '1mes') { dataLimite.setMonth(hoje.getMonth() - 1); }
+            else if (filtro === '3meses') { dataLimite.setMonth(hoje.getMonth() - 3); }
+            else if (filtro === '6meses') { dataLimite.setMonth(hoje.getMonth() - 6); }
+            else if (filtro === '1ano') { dataLimite.setFullYear(hoje.getFullYear() - 1); }
+            else if (filtro === 'sempre') { dataLimite = new Date(2000, 0, 1); }
+
+            const agrupamento = {};
+
+            dadosGlobaisRanking.forEach(jogo => {
+                const partes = jogo.data.split('/'); 
+                if (partes.length === 3) {
+                    const dataJogo = new Date(partes[2], partes[1] - 1, partes[0]);
+                    dataJogo.setHours(0,0,0,0);
+
+                    if (dataJogo >= dataLimite && dataJogo <= hoje) {
+                        if (!agrupamento[jogo.nome]) agrupamento[jogo.nome] = 0;
+                        agrupamento[jogo.nome] += jogo.acertos;
+                    }
+                }
+            });
+
+            const rankingFiltrado = Object.keys(agrupamento).map(nome => {
+                return { nome: nome, acertos: agrupamento[nome] };
+            });
+
+            rankingFiltrado.sort((a, b) => b.acertos - a.acertos);
+            renderizarLista(rankingFiltrado);
+        }
+
+        function renderizarLista(lista) {
+            let html = "";
+            lista.forEach((jogador, index) => {
+                let medalha = index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : `${index + 1}º - `;
+                html += `<p style="padding: 12px; border-bottom: 1px solid #eee; color: #2c3e50;">
+                            <strong>${medalha}${jogador.nome}</strong>: ${jogador.acertos} pts
+                         </p>`;
+            });
+            document.getElementById('lista-ranking').innerHTML = html || "<p style='text-align: center;'>Ninguém jogou neste período ainda.</p>";
+        }
+
+        function voltarInicio() {
+            document.getElementById('tela-ranking').classList.add('oculto');
+            document.getElementById('tela-login').classList.remove('oculto');
+        }
+
+        // Detecta a tecla Enter em qualquer lugar da página
+        document.addEventListener("keydown", function(event) {
+            if (event.key === "Enter") {
+                // Se a tela de login estiver visível e a pessoa apertar Enter
+                const telaLogin = document.getElementById('tela-login');
+                const telaJogo = document.getElementById('tela-jogo');
+
+                if (!telaLogin.classList.contains('oculto')) {
+                    registrarEntrada();
+                } 
+                // Se a tela do jogo estiver visível e o botão de responder estiver ativo
+                else if (!telaJogo.classList.contains('oculto')) {
+                    const btnResponder = document.getElementById('btn-responder');
+                    if (!btnResponder.disabled) {
+                        verificarResposta();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
