@@ -294,6 +294,7 @@
 
             const agrupamentoGeral = {};
             const agrupamentoHoje = {};
+            const totalQuestoesGeral = {}; // Novo: para calcular a porcentagem
             const hojeStr = new Date().toLocaleDateString('pt-BR');
 
             dadosGlobaisRanking.forEach(jogo => {
@@ -302,12 +303,18 @@
                     const dataJogo = new Date(partes[2], partes[1] - 1, partes[0]);
                     dataJogo.setHours(0,0,0,0);
 
-                    // Verifica se está dentro do período selecionado no filtro
                     if (dataJogo >= dataLimite && dataJogo <= hoje) {
-                        if (!agrupamentoGeral[jogo.nome]) agrupamentoGeral[jogo.nome] = 0;
+                        if (!agrupamentoGeral[jogo.nome]) {
+                            agrupamentoGeral[jogo.nome] = 0;
+                            totalQuestoesGeral[jogo.nome] = 0;
+                        }
+                        
                         agrupamentoGeral[jogo.nome] += jogo.acertos;
+                        
+                        // Cada bloco salvo tem 10 perguntas (acertos + erros estimados ou fixos por rodada)
+                        // Como cada bloco padrão tem 10 perguntas:
+                        totalQuestoesGeral[jogo.nome] += 10; 
 
-                        // Guarda separadamente quem pontuou HOJE
                         if (jogo.data === hojeStr) {
                             if (!agrupamentoHoje[jogo.nome]) agrupamentoHoje[jogo.nome] = 0;
                             agrupamentoHoje[jogo.nome] += jogo.acertos;
@@ -317,31 +324,43 @@
             });
 
             const rankingFiltrado = Object.keys(agrupamentoGeral).map(nome => {
+                const acertosTotais = agrupamentoGeral[nome];
+                const totalRespondidas = totalQuestoesGeral[nome];
+                // Calcula a porcentagem de acerto
+                const porcentagem = totalRespondidas > 0 ? Math.round((acertosTotais / totalRespondidas) * 100) : 0;
+
                 return { 
                     nome: nome, 
-                    acertos: agrupamentoGeral[nome],
-                    pontosHoje: agrupamentoHoje[nome] || 0 // Identifica se tem pontos hoje
+                    acertos: acertosTotais,
+                    total: totalRespondidas,
+                    porcentagem: porcentagem,
+                    pontosHoje: agrupamentoHoje[nome] || 0
                 };
             });
 
-            // ORDENAÇÃO INTELIGENTE: Quem tem pontos hoje vem primeiro, depois por maior pontuação geral
             rankingFiltrado.sort((a, b) => {
                 if (b.pontosHoje !== a.pontosHoje) {
-                    return b.pontosHoje - a.pontosHoje; // Prioriza quem jogou e pontuou hoje
+                    return b.pontosHoje - a.pontosHoje; 
                 }
-                return b.acertos - a.acertos; // Desempate por total geral do período
+                return b.acertos - a.acertos; 
             });
 
             renderizarLista(rankingFiltrado);
         }
-
         function renderizarLista(lista) {
             let html = "";
             lista.forEach((jogador, index) => {
                 let medalha = index === 0 ? "🥇 " : index === 1 ? "🥈 " : index === 2 ? "🥉 " : `${index + 1}º - `;
-                html += `<p style="padding: 12px; border-bottom: 1px solid #eee; color: #2c3e50;">
-                            <strong>${medalha}${jogador.nome}</strong>: ${jogador.acertos} pts
-                         </p>`;
+                
+                html += `<div style="padding: 12px; border-bottom: 1px solid #eee; color: #2c3e50; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${medalha}${jogador.nome}</strong><br>
+                                <span style="font-size: 14px; color: #7f8c8d;">${jogador.acertos} acertos de ${jogador.total} qts</span>
+                            </div>
+                            <div style="background-color: #eafaf1; color: #27ae60; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;">
+                                ${jogador.porcentagem}% 🎯
+                            </div>
+                         </div>`;
             });
             document.getElementById('lista-ranking').innerHTML = html || "<p style='text-align: center;'>Ninguém jogou neste período ainda.</p>";
         }
