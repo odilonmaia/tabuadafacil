@@ -51,6 +51,9 @@
         <h1>Tabuada 🚀</h1>
         <p>Pratique 5 minutinhos e mostre que você está cada dia mais craque!</p>
        <input type="text" id="nome-jogadora" placeholder="Qual o seu nome?" maxlength="20" style="text-transform: uppercase;" autocapitalize="characters" autocomplete="off">
+        <div style="text-align: center; margin-top: -15px; margin-bottom: 15px;">
+            <a href="#" onclick="limparNomeSalvo(); return false;" style="font-size: 13px; color: #7f8c8d; text-decoration: underline;">Não é você? Trocar nome</a>
+        </div>
         <button onclick="registrarEntrada()">Começar Agora!</button>
         <button onclick="mostrarRanking()" style="background-color: #f39c12; margin-top: 15px;">🏆 Ver Ranking</button>
         <button onclick="mostrarInstrucaoInstalacao()" id="btn-instalar" style="background-color: #9b59b6; margin-top: 15px;">📱 Instalar o App</button>
@@ -133,23 +136,31 @@
         // LÓGICA DO JOGO
         // ==========================================
         function registrarEntrada() {
-            const inputNome = document.getElementById('nome-jogadora');
-            const nome = inputNome.value.trim().toUpperCase();
-            
-            if (nome === "") { 
-                alert("Digite seu nome!"); 
-                return; 
-            }
+    const inputNome = document.getElementById('nome-jogadora');
+    let nomeDigitado = inputNome.value.trim();
+    
+    if (nomeDigitado === "") { 
+        alert("Digite seu nome!"); 
+        return; 
+    }
 
-            const dataAtual = new Date();
-            localStorage.setItem('jogadoraNome', nome);
-            localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
-            localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
+    // Aplica o filtro de segurança para evitar códigos ou caracteres estranhos
+    let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").toUpperCase();
+    if (nomeLimpo.length > 15) {
+        nomeLimpo = nomeLimpo.substring(0, 15); // Limita o tamanho para caber no ranking
+    }
 
-            document.getElementById('tela-login').classList.add('oculto');
-            document.getElementById('tela-jogo').classList.remove('oculto');
-            gerarPergunta();
-        }
+    const dataAtual = new Date();
+    
+    // SALVA NA MEMÓRIA DO NAVEGADOR
+    localStorage.setItem('jogadoraNome', nomeLimpo);
+    localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
+    localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
+
+    document.getElementById('tela-login').classList.add('oculto');
+    document.getElementById('tela-jogo').classList.remove('oculto');
+    gerarPergunta();
+}
 
         function validarEEnviarNome(nomeDigitado) {
     // Remove qualquer caractere especial, mantendo apenas letras (com acentos) e números
@@ -480,6 +491,31 @@
                 navigator.clipboard.writeText(window.location.href);
                 alert("Link copiado para a área de transferência! Cole para enviar aos amigos. 📋");
             }
+        }
+
+       // ==========================================
+        // CARREGAMENTO AUTOMÁTICO E LIMPEZA DE NOME
+        // ==========================================
+        window.addEventListener('DOMContentLoaded', () => {
+            const nomeSalvo = localStorage.getItem('jogadoraNome');
+            if (nomeSalvo) {
+                const inputNome = document.getElementById('nome-jogadora');
+                if (inputNome) {
+                    inputNome.value = nomeSalvo;
+                }
+            }
+        });
+
+        function limparNomeSalvo() {
+            localStorage.removeItem('jogadoraNome');
+            localStorage.removeItem('jogadoraData');
+            localStorage.removeItem('jogadoraHorario');
+            const inputNome = document.getElementById('nome-jogadora');
+            if (inputNome) {
+                inputNome.value = '';
+                inputNome.focus();
+            }
+            alert("Nome limpo! Digite o novo nome.");
         }
     </script>
 </body>
