@@ -288,14 +288,17 @@
             fetch(URL_DO_SCRIPT)
                 .then(resposta => resposta.json())
                 .then(dados => {
+                    // SEU RAIO-X AQUI:
+                    console.log("DADOS QUE CHEGARAM DA PLANILHA:", dados); 
+                    
                     dadosGlobaisRanking = dados;
                     aplicarFiltro(); 
                 })
                 .catch(erro => {
-                    document.getElementById('lista-ranking').innerHTML = "<p style='color: red; text-align: center;'>Erro ao carregar o ranking.</p>";
                     console.error("Erro no fetch:", erro);
                 });
         }
+        
 
         function aplicarFiltro() {
             const filtro = document.getElementById('filtro-tempo').value;
@@ -315,30 +318,47 @@
 
             const agrupamentoGeral = {};
             const agrupamentoHoje = {};
-            const totalQuestoesGeral = {}; // Novo: para calcular a porcentagem
+            const totalQuestoesGeral = {}; 
             const hojeStr = new Date().toLocaleDateString('pt-BR');
 
             dadosGlobaisRanking.forEach(jogo => {
-                const partes = jogo.data.split('/'); 
-                if (partes.length === 3) {
-                    const dataJogo = new Date(partes[2], partes[1] - 1, partes[0]);
+                if (!jogo.data) return;
+                
+                let dataJogo;
+                let dataDoJogoStr = "";
+
+                // A MÁGICA AQUI: Lida com a data formatada OU com a data maluca do Google
+                if (String(jogo.data).includes('/')) {
+                    const partes = String(jogo.data).split('/');
+                    if (partes.length === 3) {
+                        dataJogo = new Date(partes[2], partes[1] - 1, partes[0]);
+                        dataDoJogoStr = String(jogo.data);
+                    }
+                } else {
+                    dataJogo = new Date(jogo.data);
+                    if (!isNaN(dataJogo)) {
+                        dataDoJogoStr = dataJogo.toLocaleDateString('pt-BR');
+                    }
+                }
+
+                // Se conseguiu extrair a data com sucesso, faz a filtragem
+                if (dataJogo && !isNaN(dataJogo)) {
                     dataJogo.setHours(0,0,0,0);
 
                     if (dataJogo >= dataLimite && dataJogo <= hoje) {
+                        const qtdAcertos = parseInt(String(jogo.acertos).replace(',', '.')) || 0;
+
                         if (!agrupamentoGeral[jogo.nome]) {
                             agrupamentoGeral[jogo.nome] = 0;
                             totalQuestoesGeral[jogo.nome] = 0;
                         }
                         
-                        agrupamentoGeral[jogo.nome] += jogo.acertos;
-                        
-                        // Cada bloco salvo tem 10 perguntas (acertos + erros estimados ou fixos por rodada)
-                        // Como cada bloco padrão tem 10 perguntas:
+                        agrupamentoGeral[jogo.nome] += qtdAcertos;
                         totalQuestoesGeral[jogo.nome] += 10; 
 
-                        if (jogo.data === hojeStr) {
+                        if (dataDoJogoStr === hojeStr) {
                             if (!agrupamentoHoje[jogo.nome]) agrupamentoHoje[jogo.nome] = 0;
-                            agrupamentoHoje[jogo.nome] += jogo.acertos;
+                            agrupamentoHoje[jogo.nome] += qtdAcertos;
                         }
                     }
                 }
@@ -347,7 +367,6 @@
             const rankingFiltrado = Object.keys(agrupamentoGeral).map(nome => {
                 const acertosTotais = agrupamentoGeral[nome];
                 const totalRespondidas = totalQuestoesGeral[nome];
-                // Calcula a porcentagem de acerto
                 const porcentagem = totalRespondidas > 0 ? Math.round((acertosTotais / totalRespondidas) * 100) : 0;
 
                 return { 
@@ -365,9 +384,27 @@
                 }
                 return b.acertos - a.acertos; 
             });
+            // ... (finalzinho da função aplicarFiltro que você já tem) ...
+
+            rankingFiltrado.sort((a, b) => {
+                if (b.pontosHoje !== a.pontosHoje) {
+                    return b.pontosHoje - a.pontosHoje; 
+                }
+                return b.acertos - a.acertos; 
+            });
+
+            // --- INÍCIO DO FILTRO INTELIGENTE ---
+            if (rankingFiltrado.length === 0 && filtro === 'hoje') {
+                document.getElementById('filtro-tempo').value = 'sempre'; // Muda a caixa de seleção
+                aplicarFiltro(); // Roda a função de novo com o novo filtro
+                return; // Encerra essa rodada vazia
+            }
+            // --- FIM DO FILTRO INTELIGENTE ---
 
             renderizarLista(rankingFiltrado);
         }
+        
+
         function renderizarLista(lista) {
             let html = "";
             lista.forEach((jogador, index) => {
