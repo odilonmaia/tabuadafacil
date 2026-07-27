@@ -440,6 +440,76 @@
                 });
         }
 
+        let eventoInstalacao = null;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            eventoInstalacao = e;
+        });
+
+        function mostrarInstrucaoInstalacao() {
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            const textoInstrucao = document.getElementById('texto-instrucao');
+
+            if (isIOS) {
+                textoInstrucao.innerHTML = `
+                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu <b>iPhone</b>, siga estes passos rápidos:</p>
+                    <ol style="padding-left: 20px; color: #555;">
+                        <li>Toque no botão de <b>Compartilhar</b> <span style="font-size: 20px;">📤</span> na barra inferior do Safari.</li>
+                        <li>Role o menu para baixo e procure a opção <b>"Adicionar à Tela de Início"</b> ➕.</li>
+                        <li>Toque em <b>Adicionar</b> no canto superior direito. Pronto!</li>
+                    </ol>
+                `;
+            } else if (eventoInstalacao) {
+                eventoInstalacao.prompt();
+                eventoInstalacao.userChoice.then((escolha) => {
+                    eventoInstalacao = null;
+                });
+                return;
+            } else {
+                textoInstrucao.innerHTML = `
+                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu celular:</p>
+                    <ol style="padding-left: 20px; color: #555;">
+                        <li>Toque nos <b>três pontinhos</b> <b>(⋮)</b> no canto superior direito do navegador.</li>
+                        <li>Procure e selecione <b>"Adicionar à tela inicial"</b> ou <b>"Instalar aplicativo"</b>.</li>
+                        <li>Confirme e o ícone aparecerá na sua tela!</li>
+                    </ol>
+                `;
+            }
+
+            document.getElementById('modal-instalacao').classList.remove('oculto');
+        }
+
+        function fecharInstrucao() {
+            document.getElementById('modal-instalacao').classList.add('oculto');
+        }
+
+        function compartilharApp() {
+            // Verifica se o navegador do celular suporta o compartilhamento nativo
+            if (navigator.share) {
+                navigator.share({
+                    title: 'TabuadaFácil 🚀',
+                    text: 'Venha praticar matemática e disputar o ranking comigo!',
+                    url: window.location.href
+                })
+                .then(() => console.log('Compartilhado com sucesso'))
+                .catch((erro) => {
+                    if (erro.name !== 'AbortError') {
+                        console.log('Erro ao compartilhar:', erro);
+                    }
+                });
+            } else {
+                // Plano B: Se o navegador não suportar, copia o link para a memória
+                navigator.clipboard.writeText(window.location.href)
+                .then(() => {
+                    alert("Link copiado para a área de transferência! Cole para enviar aos amigos. 📋");
+                })
+                .catch(() => {
+                    alert("Não foi possível compartilhar automaticamente. Copie o link da barra do navegador!");
+                });
+            }
+        }
+
         function aplicarFiltro() {
             const filtro = document.getElementById('filtro-tempo').value;
             const hoje = new Date();
