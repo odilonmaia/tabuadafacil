@@ -48,10 +48,85 @@
 
     <!-- TELA INICIAL (LOGIN) -->
     <div id="tela-login" class="tela">
-        <h1>Tabuada 🚀</h1>
+        <h1>TabuadaFácil 🚀</h1>
         <p>Pratique 5 minutinhos e mostre que você está cada dia mais craque!</p>
-       <input type="text" id="nome-jogadora" placeholder="Qual o seu nome?" maxlength="20" style="text-transform: uppercase;" autocapitalize="characters" autocomplete="off">
-        <div style="text-align: center; margin-top: -15px; margin-bottom: 15px;">
+       <input type="text" id="nome-jogadora" placeholder="Qual o seu nome?" maxlength="20" style="text-transform: uppercase;" autocapitalize="characters" autocomplete="off" list="sugestoes-nomes">
+        <datalist id="sugestoes-nomes"></datalist>
+       <!-- ESTILOS VISUAIS PARA OS BOTÕES DE OPERAÇÃO -->
+        <style>
+            /* 1. Esconde a caixinha padrão do navegador */
+            .chk-operacao {
+                display: none;
+            }
+            
+            /* 2. Estilo base dos botões (menores e alinhados) */
+            .btn-operacao {
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                background: white;
+                padding: 8px 12px;
+                border-radius: 8px;
+                border: 2px solid #dcdde1;
+                flex: 1 1 40%;
+                color: #555;
+                position: relative;
+                transition: all 0.2s ease;
+            }
+
+            /* 3. O que acontece quando o botão está SELECIONADO */
+            .chk-operacao:checked + .btn-operacao {
+                border-color: #27ae60;       /* Borda verde */
+                background-color: #eafaf1;   /* Fundo verde bem claro */
+                color: #27ae60;              /* Texto verde */
+                font-weight: bold;
+            }
+
+            /* 4. Cria o sinal de ✔ verde no canto direito quando selecionado */
+            .chk-operacao:checked + .btn-operacao::after {
+                content: '✔';
+                position: absolute;
+                right: 8px;
+                color: white;
+                background-color: #27ae60;
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+            }
+        </style>
+
+        <!-- ESTRUTURA DOS BOTÕES -->
+        <div style="margin-top: 15px; margin-bottom: 20px; background: #f8f9fa; padding: 12px; border-radius: 8px;">
+            <p style="margin-bottom: 12px; font-weight: bold; color: #2c3e50; text-align: center; font-size: 14px;">O que vamos praticar hoje?</p>
+            
+            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+                
+                <!-- Adição -->
+                <input type="checkbox" id="chk-add" value="adicao" class="chk-operacao">
+                <label for="chk-add" class="btn-operacao">➕ Adição</label>
+
+                <!-- Subtração -->
+                <input type="checkbox" id="chk-sub" value="subtracao" class="chk-operacao">
+                <label for="chk-sub" class="btn-operacao">➖ Subtração</label>
+
+                <!-- Multiplicação -->
+                <input type="checkbox" id="chk-mult" value="multiplicacao" class="chk-operacao" checked>
+                <label for="chk-mult" class="btn-operacao">✖️ Multiplicação</label>
+
+                <!-- Divisão -->
+                <input type="checkbox" id="chk-div" value="divisao" class="chk-operacao">
+                <label for="chk-div" class="btn-operacao">➗ Divisão</label>
+
+            </div>
+        </div>
+       <div style="text-align: center; margin-top: -15px; margin-bottom: 15px;">
             <a href="#" onclick="limparNomeSalvo(); return false;" style="font-size: 13px; color: #7f8c8d; text-decoration: underline;">Não é você? Trocar nome</a>
         </div>
         <button onclick="registrarEntrada()">Começar Agora!</button>
@@ -88,12 +163,14 @@
     <!-- TELA FINAL -->
     <div id="tela-final" class="tela oculto">
         <h1>Mandou bem! 🎉</h1>
-        <p>Você completou o bloco de 10 perguntas.</p>
+        <!-- Mensagem genérica que serve para qualquer quantidade de questões -->
+        <p>Você completou esta rodada de desafios com sucesso!</p>
+        
         <div class="destaque-nota" id="nota-final">10/10</div>
         <p id="mensagem-envio">Resultados salvos!</p>
         
-        <!-- Novos botões de escolha -->
-        <button onclick="continuarJogando()" style="margin-top: 15px; background-color: #2ecc71;">Resolver mais 10 🚀</button>
+        <!-- Botão com chamada motivacional ajustada -->
+        <button onclick="continuarJogando()" style="margin-top: 15px; background-color: #2ecc71;">Quero aprender mais 🚀</button>
         <button onclick="irParaTelaInicio()" style="margin-top: 12px; background-color: #e74c3c;">Finalizar e Sair</button>
     </div>
 
@@ -123,52 +200,131 @@
         // ==========================================
         let fator1, fator2, respostaCorreta;
         let perguntaAtual = 1;
-        const totalPerguntas = 10;
+        let totalPerguntas = 10;
         let acertos = 0;
         let errosCometidos = []; 
         let dadosGlobaisRanking = [];
 
+        // VARIÁVEIS DE OPERAÇÕES E FILA
+        let operacoesEscolhidas = [];
+        let filaOperacoes = [];
+        let simboloSinal = "×";
+
         // ⚠️ ATENÇÃO: COLOQUE A SUA URL AQUI DENTRO DAS ASPAS! 
-        // Exemplo: "https://script.google.com/macros/s/SEU_CODIGO/exec"
         const URL_DO_SCRIPT = "https://script.google.com/macros/s/AKfycbyWrNs1wEvp3GKH3VSh5EoCJgAaL2UEmYEeer5x4hcIXTzsGXtag_Ep3ydNteYWzFA/exec"; 
 
         // ==========================================
         // LÓGICA DO JOGO
         // ==========================================
         function registrarEntrada() {
-    const inputNome = document.getElementById('nome-jogadora');
-    let nomeDigitado = inputNome.value.trim();
-    
-    if (nomeDigitado === "") { 
-        alert("Digite seu nome!"); 
-        return; 
-    }
+            const inputNome = document.getElementById('nome-jogadora');
+            let nomeDigitado = inputNome.value.trim();
+            
+            if (nomeDigitado === "") { 
+                alert("Digite seu nome!"); 
+                return; 
+            }
 
-    // Limpa caracteres estranhos e padroniza em maiúsculas
-    let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").toUpperCase();
-    if (nomeLimpo.length > 15) {
-        nomeLimpo = nomeLimpo.substring(0, 15);
-    }
+            // 1. Verifica quais botões de operação foram marcados
+            const checkboxesMarcados = document.querySelectorAll('.chk-operacao:checked');
+            if (checkboxesMarcados.length === 0) {
+                alert("Escolha pelo menos uma operação matemática para praticar!");
+                return;
+            }
 
-    const dataAtual = new Date();
-    
-    // SALVA NA MEMÓRIA COM A CHAVE PADRÃO 'jogadoraNome'
-    localStorage.setItem('jogadoraNome', nomeLimpo);
-    localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
-    localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
+            // Salva as operações escolhidas na memória
+            operacoesEscolhidas = Array.from(checkboxesMarcados).map(chk => chk.value);
+            localStorage.setItem('jogadoraOperacoes', JSON.stringify(operacoesEscolhidas));
 
-    document.getElementById('tela-login').classList.add('oculto');
-    document.getElementById('tela-jogo').classList.remove('oculto');
-    gerarPergunta();
-}
+            // 2. MONTAGEM DA FILA DE PERGUNTAS CONFORME SUA REGRA:
+            filaOperacoes = [];
+            const qtdOpcoes = operacoesEscolhidas.length;
+            let perguntasPorOpcao = 0;
+
+            if (qtdOpcoes === 1) {
+                perguntasPorOpcao = 10; // 1 caixa = 10 questões daquela
+            } else if (qtdOpcoes === 2) {
+                perguntasPorOpcao = 5;  // 2 caixas = 5 de cada (total 10)
+            } else if (qtdOpcoes === 3) {
+                perguntasPorOpcao = 4;  // 3 caixas = 4 de cada (total 12)
+            } else if (qtdOpcoes === 4) {
+                perguntasPorOpcao = 3;  // 4 caixas = 3 de cada (total 12)
+            }
+
+            // Preenche a fila repetindo cada operação a quantidade de vezes necessária
+            operacoesEscolhidas.forEach(op => {
+                for (let i = 0; i < perguntasPorOpcao; i++) {
+                    filaOperacoes.push(op);
+                }
+            });
+
+            // Embaralha a fila para que as operações venham misturadas aleatoriamente
+            filaOperacoes.sort(() => Math.random() - 0.5);
+
+            // Ajusta o total de perguntas da partida de acordo com o tamanho da fila gerada
+            totalPerguntas = filaOperacoes.length;
+            perguntaAtual = 1;
+            acertos = 0;
+            errosCometidos = [];
+
+            let nomeLimpo = nomeDigitado.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, "").toUpperCase();
+            if (nomeLimpo.length > 15) { nomeLimpo = nomeLimpo.substring(0, 15); }
+
+            const dataAtual = new Date();
+            localStorage.setItem('jogadoraNome', nomeLimpo);
+            localStorage.setItem('jogadoraData', dataAtual.toLocaleDateString('pt-BR'));
+            localStorage.setItem('jogadoraHorario', dataAtual.toLocaleTimeString('pt-BR'));
+
+            let historico = JSON.parse(localStorage.getItem('historicoNomes')) || [];
+            if (!historico.includes(nomeLimpo)) {
+                historico.push(nomeLimpo);
+                localStorage.setItem('historicoNomes', JSON.stringify(historico));
+            }
+
+            document.getElementById('tela-login').classList.add('oculto');
+            document.getElementById('tela-jogo').classList.remove('oculto');
+            gerarPergunta();
+        }
+        
 
         function gerarPergunta() {
-            fator1 = Math.floor(Math.random() * 8) + 2; 
-            fator2 = Math.floor(Math.random() * 8) + 2;
-            respostaCorreta = fator1 * fator2;
+            // Pega a próxima operação da fila baseada na pergunta atual
+            const operacaoAtual = filaOperacoes[perguntaAtual - 1] || "multiplicacao";
+
+            if (operacaoAtual === "multiplicacao") {
+                fator1 = Math.floor(Math.random() * 8) + 2; 
+                fator2 = Math.floor(Math.random() * 8) + 2;
+                respostaCorreta = fator1 * fator2;
+                simboloSinal = "×";
+            } 
+            else if (operacaoAtual === "adicao") {
+                fator1 = Math.floor(Math.random() * 50) + 1; 
+                fator2 = Math.floor(Math.random() * 50) + 1;
+                respostaCorreta = fator1 + fator2;
+                simboloSinal = "+";
+            } 
+            else if (operacaoAtual === "subtracao") {
+                fator1 = Math.floor(Math.random() * 50) + 10;
+                fator2 = Math.floor(Math.random() * fator1) + 1; 
+                respostaCorreta = fator1 - fator2;
+                simboloSinal = "-";
+            } 
+            else if (operacaoAtual === "divisao") {
+                fator2 = Math.floor(Math.random() * 9) + 2; 
+                respostaCorreta = Math.floor(Math.random() * 10) + 1; 
+                fator1 = fator2 * respostaCorreta; 
+                simboloSinal = "÷";
+            }
 
             document.getElementById('fator1').innerText = fator1;
             document.getElementById('fator2').innerText = fator2;
+            
+            // Atualiza o sinal corretamente usando a classe .sinal
+            const elementoSinal = document.querySelector('.sinal');
+            if (elementoSinal) {
+                elementoSinal.innerText = simboloSinal;
+            }
+
             document.getElementById('contador-perguntas').innerText = `Pergunta ${perguntaAtual} de ${totalPerguntas}`;
             
             const inputResposta = document.getElementById('resposta');
@@ -189,7 +345,7 @@
                 acertos++;
                 inputResposta.classList.add('acertou');
             } else {
-                errosCometidos.push(`${fator1}x${fator2} (resp: ${respostaUsuario})`);
+                errosCometidos.push(`${fator1} ${simboloSinal} ${fator2} (resp: ${respostaUsuario})`);
                 inputResposta.classList.add('errou');
             }
 
@@ -218,6 +374,7 @@
                 hora: localStorage.getItem('jogadoraHorario'),
                 nome: localStorage.getItem('jogadoraNome'),
                 acertos: acertos,
+                totalQuestoes: totalPerguntas, 
                 erros: errosCometidos.length > 0 ? errosCometidos.join(" | ") : "Nenhum erro!"
             };
 
@@ -230,8 +387,23 @@
             .then(() => { document.getElementById('mensagem-envio').innerText = "Resultados salvos com sucesso! ✅"; })
             .catch(() => { document.getElementById('mensagem-envio').innerText = "Erro ao salvar resultados."; });
         }
-        // Reseta o jogo mantendo o nome da pessoa para mais 10 perguntas
+
         function continuarJogando() {
+            filaOperacoes = [];
+            const checkboxesMarcados = document.querySelectorAll('.chk-operacao:checked');
+            let operacoesAtuais = Array.from(checkboxesMarcados).map(chk => chk.value);
+            
+            const qtdOpcoes = operacoesAtuais.length;
+            let perguntasPorOpcao = qtdOpcoes === 1 ? 10 : qtdOpcoes === 2 ? 5 : qtdOpcoes === 3 ? 4 : 3;
+
+            operacoesAtuais.forEach(op => {
+                for (let i = 0; i < perguntasPorOpcao; i++) {
+                    filaOperacoes.push(op);
+                }
+            });
+            filaOperacoes.sort(() => Math.random() - 0.5);
+
+            totalPerguntas = filaOperacoes.length;
             perguntaAtual = 1;
             acertos = 0;
             errosCometidos = [];
@@ -241,45 +413,14 @@
             gerarPergunta();
         }
 
-        // Limpa tudo e volta de verdade para a tela inicial
         function irParaTelaInicio() {
-            localStorage.removeItem('jogadoraNome');
-            localStorage.removeItem('jogadoraData');
-            localStorage.removeItem('jogadoraHorario');
             location.reload(); 
         }
-
-        function enviarDadosParaPlanilha(nome, acertos, erros) {
-    const dadosParaEnviar = {
-        token: "TabuadaEscola2026Secure#", // Precisa ser exatamente igual à do Apps Script
-        nome: nome,
-        acertos: acertos,
-        erros: erros,
-        data: new Date().toLocaleDateString('pt-BR')
-    };
-
-    fetch(URL_DO_SCRIPT, {
-        method: 'POST',
-        mode: 'no-cors', // Mantém o funcionamento do GitHub Pages com o Apps Script
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosParaEnviar)
-    })
-    .then(() => {
-        console.log("Pontuação salva com segurança!");
-    })
-    .catch(err => console.error("Erro ao salvar:", err));
-}
 
         function sairDoJogo() {
-            localStorage.removeItem('jogadoraNome');
-            localStorage.removeItem('jogadoraData');
-            localStorage.removeItem('jogadoraHorario');
             location.reload(); 
         }
 
-        // ==========================================
-        // LÓGICA DO RANKING
-        // ==========================================
         function mostrarRanking() {
             document.getElementById('tela-login').classList.add('oculto');
             document.getElementById('tela-ranking').classList.remove('oculto');
@@ -288,9 +429,6 @@
             fetch(URL_DO_SCRIPT)
                 .then(resposta => resposta.json())
                 .then(dados => {
-                    // SEU RAIO-X AQUI:
-                    console.log("DADOS QUE CHEGARAM DA PLANILHA:", dados); 
-                    
                     dadosGlobaisRanking = dados;
                     aplicarFiltro(); 
                 })
@@ -298,7 +436,6 @@
                     console.error("Erro no fetch:", erro);
                 });
         }
-        
 
         function aplicarFiltro() {
             const filtro = document.getElementById('filtro-tempo').value;
@@ -327,7 +464,6 @@
                 let dataJogo;
                 let dataDoJogoStr = "";
 
-                // A MÁGICA AQUI: Lida com a data formatada OU com a data maluca do Google
                 if (String(jogo.data).includes('/')) {
                     const partes = String(jogo.data).split('/');
                     if (partes.length === 3) {
@@ -341,7 +477,6 @@
                     }
                 }
 
-                // Se conseguiu extrair a data com sucesso, faz a filtragem
                 if (dataJogo && !isNaN(dataJogo)) {
                     dataJogo.setHours(0,0,0,0);
 
@@ -354,7 +489,10 @@
                         }
                         
                         agrupamentoGeral[jogo.nome] += qtdAcertos;
-                        totalQuestoesGeral[jogo.nome] += 10; 
+                        
+                        // Pega o total de questões real da partida (ou assume 10 caso seja um registro antigo)
+                        const qtsDaPartida = parseInt(jogo.totalQuestoes) || 10;
+                        totalQuestoesGeral[jogo.nome] += qtsDaPartida;
 
                         if (dataDoJogoStr === hojeStr) {
                             if (!agrupamentoHoje[jogo.nome]) agrupamentoHoje[jogo.nome] = 0;
@@ -384,26 +522,15 @@
                 }
                 return b.acertos - a.acertos; 
             });
-            // ... (finalzinho da função aplicarFiltro que você já tem) ...
 
-            rankingFiltrado.sort((a, b) => {
-                if (b.pontosHoje !== a.pontosHoje) {
-                    return b.pontosHoje - a.pontosHoje; 
-                }
-                return b.acertos - a.acertos; 
-            });
-
-            // --- INÍCIO DO FILTRO INTELIGENTE ---
             if (rankingFiltrado.length === 0 && filtro === 'hoje') {
-                document.getElementById('filtro-tempo').value = 'sempre'; // Muda a caixa de seleção
-                aplicarFiltro(); // Roda a função de novo com o novo filtro
-                return; // Encerra essa rodada vazia
+                document.getElementById('filtro-tempo').value = 'sempre';
+                aplicarFiltro();
+                return;
             }
-            // --- FIM DO FILTRO INTELIGENTE ---
 
             renderizarLista(rankingFiltrado);
         }
-        
 
         function renderizarLista(lista) {
             let html = "";
@@ -418,7 +545,7 @@
                             <div style="background-color: #eafaf1; color: #27ae60; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px;">
                                 ${jogador.porcentagem}% 🎯
                             </div>
-                         </div>`;
+                       </div>`;
             });
             document.getElementById('lista-ranking').innerHTML = html || "<p style='text-align: center;'>Ninguém jogou neste período ainda.</p>";
         }
@@ -428,18 +555,14 @@
             document.getElementById('tela-login').classList.remove('oculto');
         }
 
-        // Detecta a tecla Enter em qualquer lugar da página
         document.addEventListener("keydown", function(event) {
             if (event.key === "Enter") {
-                // Se a tela de login estiver visível e a pessoa apertar Enter
                 const telaLogin = document.getElementById('tela-login');
                 const telaJogo = document.getElementById('tela-jogo');
 
                 if (!telaLogin.classList.contains('oculto')) {
                     registrarEntrada();
-                } 
-                // Se a tela do jogo estiver visível e o botão de responder estiver ativo
-                else if (!telaJogo.classList.contains('oculto')) {
+                } else if (!telaJogo.classList.contains('oculto')) {
                     const btnResponder = document.getElementById('btn-responder');
                     if (!btnResponder.disabled) {
                         verificarResposta();
@@ -447,85 +570,6 @@
                 }
             }
         });
-
-        let eventoInstalacao = null;
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            eventoInstalacao = e;
-        });
-
-        function mostrarInstrucaoInstalacao() {
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-            const textoInstrucao = document.getElementById('texto-instrucao');
-
-            if (isIOS) {
-                // Instruções específicas para iPhone / Safari
-                textoInstrucao.innerHTML = `
-                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu <b>iPhone</b>, siga estes passos rápidos:</p>
-                    <ol style="padding-left: 20px; color: #555;">
-                        <li>Toque no botão de <b>Compartilhar</b> <span style="font-size: 20px;">📤</span> na barra inferior do Safari.</li>
-                        <li>Role o menu para baixo e procure a opção <b>"Adicionar à Tela de Início"</b> ➕.</li>
-                        <li>Toque em <b>Adicionar</b> no canto superior direito. Pronto!</li>
-                    </ol>
-                `;
-            } else if (eventoInstalacao) {
-                // Se for Android e o navegador permitir o gatilho automático
-                eventoInstalacao.prompt();
-                eventoInstalacao.userChoice.then((escolha) => {
-                    eventoInstalacao = null;
-                });
-                return;
-            } else {
-                // Instruções genéricas para Android caso o evento não dispare de primeira
-                textoInstrucao.innerHTML = `
-                    <p style="margin-bottom: 10px; color: #2c3e50;">No seu celular:</p>
-                    <ol style="padding-left: 20px; color: #555;">
-                        <li>Toque nos <b>três pontinhos</b> <b>(⋮)</b> no canto superior direito do navegador.</li>
-                        <li>Procure e selecione <b>"Adicionar à tela inicial"</b> ou <b>"Instalar aplicativo"</b>.</li>
-                        <li>Confirme e o ícone aparecerá na sua tela!</li>
-                    </ol>
-                `;
-            }
-
-            // Exibe a janelinha de instrução
-            document.getElementById('modal-instalacao').classList.remove('oculto');
-        }
-
-        function fecharInstrucao() {
-            document.getElementById('modal-instalacao').classList.add('oculto');
-        }
-
-        function compartilharApp() {
-            // Verifica se o celular suporta o compartilhamento nativo
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Desafio da Tabuada 🚀',
-                    text: 'Venha praticar tabuada e disputar o ranking comigo!',
-                    url: window.location.href // Pega o link atual do site automaticamente
-                })
-                .then(() => console.log('Compartilhado com sucesso'))
-                .catch((erro) => console.log('Erro ao compartilhar', erro));
-            } else {
-                // Caso o navegador do computador ou algum mais antigo não suporte
-                navigator.clipboard.writeText(window.location.href);
-                alert("Link copiado para a área de transferência! Cole para enviar aos amigos. 📋");
-            }
-        }
-
-       // ==========================================
-        // CARREGAMENTO AUTOMÁTICO E LIMPEZA DE NOME
-        // ==========================================
-        // Carrega automaticamente o nome salvo assim que o site abre
-window.addEventListener('DOMContentLoaded', () => {
-    const nomeSalvo = localStorage.getItem('jogadoraNome');
-    if (nomeSalvo) {
-        const inputNome = document.getElementById('nome-jogadora');
-        if (inputNome) {
-            inputNome.value = nomeSalvo;
-        }
-    }
-});
 
         function limparNomeSalvo() {
             localStorage.removeItem('jogadoraNome');
@@ -538,6 +582,35 @@ window.addEventListener('DOMContentLoaded', () => {
             }
             alert("Nome limpo! Digite o novo nome.");
         }
+
+        window.onload = function() {
+            const nomeSalvo = localStorage.getItem('jogadoraNome');
+            const inputNome = document.getElementById('nome-jogadora');
+            
+            if (inputNome && nomeSalvo) {
+                inputNome.value = nomeSalvo;
+            }
+
+            const datalist = document.getElementById('sugestoes-nomes');
+            let historico = JSON.parse(localStorage.getItem('historicoNomes')) || [];
+            
+            if (datalist && historico.length > 0) {
+                datalist.innerHTML = "";
+                historico.forEach(nome => {
+                    let option = document.createElement('option');
+                    option.value = nome;
+                    datalist.appendChild(option);
+                });
+            }
+
+            const operacoesSalvas = JSON.parse(localStorage.getItem('jogadoraOperacoes'));
+            if (operacoesSalvas && operacoesSalvas.length > 0) {
+                const checkboxes = document.querySelectorAll('.chk-operacao');
+                checkboxes.forEach(chk => {
+                    chk.checked = operacoesSalvas.includes(chk.value);
+                });
+            }
+        };
     </script>
 </body>
 </html>
